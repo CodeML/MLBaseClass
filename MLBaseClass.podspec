@@ -14,4 +14,5 @@ Pod::Spec.new do |spec|
   spec.ios.deployment_target = '8.0'
  
   spec.dependency 'MLExtension'
+  spec.dependency 'MJRefresh'
 end

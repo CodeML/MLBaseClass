@@ -2,6 +2,9 @@
 
 #import "MLBaseTableViewCell.h"
 #import "MLBaseCellModel.h"
+#import "MLExtension.h"
+#import "heads.h"
+#import <SDWebImage/UIImageView+WebCache.h>
 
 @interface MLBaseTableViewCell ()
 @property (nonatomic, strong) UIView *line_ml;

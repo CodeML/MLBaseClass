@@ -1,6 +1,7 @@
 
 #import "MLBaseModel.h"
 #import "MJExtension.h"
+#import "MLExtension.h"
 
 @implementation MLBaseModel
 - (id)copyWithZone:(nullable NSZone *)zone {

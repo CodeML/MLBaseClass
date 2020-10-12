@@ -3,7 +3,7 @@
 #import "MLBaseModel.h"
 
 NS_ASSUME_NONNULL_BEGIN
-@class MLBaseCellModel;
+@class MLBaseCellModel, MLBaseView;
 @interface MLBaseTableViewSectionModel : MLBaseModel
 @property (nonatomic, strong) NSDictionary *dict;
 @property (nonatomic, copy) NSString *headTitle;

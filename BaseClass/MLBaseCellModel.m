@@ -55,7 +55,7 @@
 
 - (CGFloat)cellHeight {
     if (!_cellHeight) {
-        _cellHeight = CELLH;
+        _cellHeight = 44;
     }
     return _cellHeight;
 }
