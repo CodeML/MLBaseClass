@@ -1,9 +1,6 @@
 
 
 #import "MLBaseTableViewCell.h"
-#import "MLBaseCellModel.h"
-#import "MLExtension.h"
-#import "heads.h"
 #import "UIImageView+WebCache.h"
 
 @interface MLBaseTableViewCell ()

@@ -1,10 +1,12 @@
 
 
 #import <UIKit/UIKit.h>
+#import "MLExtension.h"
+#import "heads.h"
+#import "MLBaseCellModel.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class MLBaseCellModel;
 @interface MLBaseTableViewCell : UITableViewCell
 @property (nonatomic, strong) NSIndexPath *indexPath;
 @property (nonatomic, strong) MLBaseCellModel *cellModel;
