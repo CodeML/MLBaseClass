@@ -4,7 +4,6 @@
 #import "MLBaseCellModel.h"
 #import "MLBaseTableViewSectionModel.h"
 #import "MLBaseTableViewCell.h"
-#import <MJRefresh/MJRefresh.h>
 
 NS_ASSUME_NONNULL_BEGIN
 

@@ -1,7 +1,7 @@
 
 
 #import "MLBaseTableViewSectionModel.h"
-#import <MJExtension/MJExtension.h>
+#import "MJExtension.h"
 #import "MLBaseCellModel.h"
 
 @implementation MLBaseTableViewSectionModel
