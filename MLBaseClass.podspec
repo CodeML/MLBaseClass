@@ -10,7 +10,7 @@ Pod::Spec.new do |spec|
 
   spec.platform = :ios
   spec.requires_arc = true
-  spec.source_files  = "BaseClass/*.{h,m}"
+  spec.source_files  = "MLBaseClass/*.{h,m}"
   spec.ios.deployment_target = '8.0'
  
   spec.dependency 'MLExtension'
