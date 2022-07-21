@@ -10,6 +10,11 @@
 #define MARGIN_B 15
 #define MARGIN_M 10
 #define MARGIN_S 5
+#define SCALE_VALUE(x)      (ceilf((x) * (SCREENW / 375.0)))
 
-#define WeakSelf    __weak typeof(self) weakSelf = self;
-#define StrongSelf  __strong typeof(self) strongSelf = weakSelf;
+#define weakify(var) __weak typeof(var) MLWeak_##var = var;
+#define strongify(var) \
+_Pragma("clang diagnostic push") \
+_Pragma("clang diagnostic ignored \"-Wshadow\"") \
+__strong typeof(var) var = MLWeak_##var; \
+_Pragma("clang diagnostic pop")

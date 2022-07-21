@@ -3,15 +3,18 @@
 #import "MLBaseViewController.h"
 #import "MLBaseTableViewCell.h"
 #import <Objc/Runtime.h>
+#import <Toast/Toast.h>
 
 //#import <UMAnalytics/MobClick.h>
 
 @interface MLBaseViewController ()
-@property (nonatomic, strong) UIView *noData;
+
 @property (nonatomic, assign) BOOL isFirstVC;
+
 @end
 
 @implementation MLBaseViewController
+@synthesize dataArray = _dataArray;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -20,24 +23,54 @@
     self.backArrow = YES;
     [self backNoText];
     
-    if (@available(iOS 11.0, *)) {
-    }else{
-        self.automaticallyAdjustsScrollViewInsets = NO;
-    }
-    
     self.view.backgroundColor = UIColor.whiteColor;
-    self.navigationController.navigationBar.tintColor = UIColor.black3;
+//    self.navigationController.navigationBar.tintColor = UIColor.black3;
+    
+    self.navigationController.navigationBarHidden = YES;
+//    self.navigationBar.hidden = NO;
+    
     [self loadData];
+}
+
+- (void)setNavBarColor:(UIColor *)navBarColor {
+    _navBarColor = navBarColor;
+    self.navigationBar.backgroundColor = navBarColor;
+//    if (@available(iOS 15.0, *)) {
+//        UINavigationBarAppearance *appearance = UINavigationBarAppearance.new;
+//        appearance.backgroundColor = navBarColor;
+//        appearance.shadowColor = UIColor.clearColor;
+//        appearance.backgroundEffect = nil;
+//        self.navigationController.navigationBar.scrollEdgeAppearance = appearance;
+//        UIApplication.sharedApplication.keyWindow.backgroundColor = navBarColor;
+//    }else{
+//        [self.navigationController.navigationBar setBackgroundImage:[UIImage imageWithColor:navBarColor] forBarMetrics:UIBarMetricsDefault];
+//    }
+}
+
+- (void)setTitle:(NSString *)title {
+    [super setTitle:title];
+    
+    self.navigationBar.titleLab.text = title;
+}
+
+- (void)setNoData:(UIView *)noData {
+    _noData = noData;
+    _noData.hidden = YES;
+    if (_tableView) {
+        _tableView.backgroundView = noData;
+    }else{
+        [self.view insertSubview:noData atIndex:0];
+    }
 }
 
 - (void)setBackArrow:(BOOL)backArrow {
     _backArrow = backArrow;
-    
-    if (_backArrow) {
-        self.navigationItem.leftBarButtonItem = [UIBarButtonItem itemWithIcon:@"header_back_icon" target:self action:@selector(pop)];
-    }else{
-        self.navigationItem.leftBarButtonItem = nil;
-    }
+    _navigationBar.backBtn.hidden = !_backArrow;
+//    if (_backArrow) {
+//        self.navigationItem.leftBarButtonItem = [UIBarButtonItem itemWithIcon:@"header_back_icon" target:self action:@selector(pop)];
+//    }else{
+//        self.navigationItem.leftBarButtonItem = nil;
+//    }
 }
 
 - (void)setShadow:(BOOL)shadow {
@@ -51,6 +84,7 @@
     if (_shadow) {
         [self.navigationController.navigationBar addShadow];
     }
+    
     // 页面统计
 //    [MobClick beginLogPageView:NSStringFromClass(self.class)];
 }
@@ -60,6 +94,7 @@
     if (_shadow) {
         [self.navigationController.navigationBar deleteShadow];
     }
+    
 //    [MobClick endLogPageView:NSStringFromClass(self.class)];
 }
 
@@ -72,23 +107,20 @@
 
 - (void)setStyle:(UIStatusBarStyle)style {
     objc_setAssociatedObject(self, @selector(style), @(style), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    
-    if (style) {
-        self.navigationController.navigationBar.hidden = YES;
-//        [self.navigationController.navigationBar setBarStyle:UIBarStyleBlack];
-    }else{
-        self.navigationController.navigationBar.hidden = NO;
-//        [self.navigationController.navigationBar setBarStyle:UIBarStyleDefault];
-    }
 }
 
 - (void)setHasFooter:(BOOL)hasFooter {
     _hasFooter = hasFooter;
     
     if (hasFooter) {
+        weakify(self)
         MJRefreshAutoNormalFooter *footer = [MJRefreshAutoNormalFooter footerWithRefreshingBlock:^{
-            self.page ++;
-            [self loadMore];
+            strongify(self)
+            if (self.page == self.totalPage) {
+                [self.tableView.mj_footer endRefreshingWithNoMoreData];
+            }else{
+                [self loadMore];
+            }
         }];
         [footer setTitle:@"" forState:(MJRefreshStateIdle)];
         self.tableView.mj_footer = footer;
@@ -110,7 +142,14 @@
 }
 
 - (void)push:(NSObject *)vc {
-    [self push:vc parma:@{}];
+    if ([vc isKindOfClass:NSString.class] && [(NSString *)vc containsString:@"method://"]) {
+        NSString *url = (NSString *)vc;
+        if ([SCCModule canOpenURL:url]) {
+            [SCCModule openURL:url];
+        }
+    }else{
+        [self push:vc parma:@{}];
+    }
 }
 
 - (void)push:(NSObject *)vc parma:(id)parma title:(NSString *)title {
@@ -139,11 +178,13 @@
             contro.title = title;
         }
         
-        self.navigationController.navigationBar.hidden = NO;
-        self.hidesBottomBarWhenPushed = YES;
-        [self.navigationController pushViewController:contro animated:YES];
+//        if ([contro isKindOfClass:MLBaseViewController.class]) {
+//            self.navigationController.navigationBarHidden = false;
+//        }
+        self.hidesBottomBarWhenPushed = true;
+        [self.navigationController pushViewController:contro animated:true];
         if (self.isFirstVC) {
-            self.hidesBottomBarWhenPushed = NO;
+            self.hidesBottomBarWhenPushed = false;
         }
     }
 }
@@ -153,16 +194,16 @@
 }
 
 - (void)popTo:(NSString *)classStr {
-    for (MLBaseViewController *vc in self.navigationController.viewControllers) {
+    [self.navigationController.viewControllers enumerateObjectsWithOptions:NSEnumerationReverse usingBlock:^(__kindof UIViewController * _Nonnull vc, NSUInteger idx, BOOL * _Nonnull stop) {
         if ([NSStringFromClass(vc.class) isEqualToString:classStr]) {
             [self.navigationController popToViewController:vc animated:YES];
-            return;
+            *stop = YES;
         }
-    }
+    }];
 }
 
 - (void)pop {
-    if (self.presentingViewController) {
+    if (self.presentingViewController && ![self.presentingViewController.presentedViewController isKindOfClass:UINavigationController.class]) {
         [self dismissViewControllerAnimated:YES completion:nil];
     }else{
         [self.navigationController popViewControllerAnimated:YES];
@@ -174,16 +215,27 @@
 }
 
 #pragma mark - UI
+/**
+ 主要用作tableview数据请求，footer loadMore会触发该网络请求
+*/
 - (void)loadData {}
+
 - (void)loadMore {
-    if (self.tableView.mj_footer.state == MJRefreshStateNoMoreData && self.page > 1) {
-        return;
+    if (_totalPage) {
+        self.page ++;
+        [self loadData];
+    }else{
+        [self.tableView.mj_footer resetNoMoreData];
     }
-    [self loadData];
 }
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     [self.view endEditing:YES];
+}
+
+- (void)showToast:(NSString *)msg
+{
+    [self.view makeToast:msg duration:1 position:CSToastPositionCenter];
 }
 
 - (void)dealloc {
@@ -225,6 +277,9 @@
 
 #pragma mark - UITableViewDelegate
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    if (!self.dataArray.count) {
+        return 0.01;
+    }
     if (_isSectionModel) {
         return [(MLBaseTableViewSectionModel *)self.dataArray[section] headH];
     }
@@ -232,6 +287,9 @@
 }
 
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
+    if (!self.dataArray.count) {
+        return UIView.new;
+    }
     if (_isSectionModel) {
         return [(MLBaseTableViewSectionModel *)self.dataArray[section] headView];
     }
@@ -239,6 +297,9 @@
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
+    if (!self.dataArray.count) {
+        return 0.01;
+    }
     if (_isSectionModel) {
         return [(MLBaseTableViewSectionModel *)self.dataArray[section] footH];
     }
@@ -246,6 +307,9 @@
 }
 
 - (UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
+    if (!self.dataArray.count) {
+        return UIView.new;
+    }
     if (_isSectionModel) {
         return [(MLBaseTableViewSectionModel *)self.dataArray[section] footView];
     }
@@ -253,21 +317,12 @@
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    
     if (!self.dataArray.count) {
         return CELLH;
     }
-    
     MLBaseCellModel *model = [self getModel:indexPath];
-    return model.cellHeight ? : CELLH;
+    return model.cellHeight;
 }
-
-//- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-//    MLBaseCellModel *model = [self getModel:indexPath];
-//    if (model.actionBlock) {
-//        model.actionBlock(indexPath);
-//    }
-//}
 
 - (MLBaseCellModel *)getModel:(NSIndexPath *)indexPath {
     MLBaseCellModel *model = nil;
@@ -286,49 +341,127 @@
 
 - (UITableView *)tableView {
     if (!_tableView) {
-        _tableView = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, SCREENW, self.view.height_ml - NAV_BAR_H) style:(UITableViewStyleGrouped)];
+        _tableView = [[UITableView alloc] initWithFrame:CGRectMake(0, NAV_BAR_H, SCREENW, self.view.height_ml - NAV_BAR_H) style:(UITableViewStyleGrouped)];
+        _tableView.contentInsetAdjustmentBehavior = NO;
         _tableView.estimatedRowHeight = 0;
         _tableView.estimatedSectionFooterHeight = 0;
         _tableView.estimatedSectionHeaderHeight = 0;
         _tableView.dataSource = self;
         _tableView.delegate = self;
-        _tableView.separatorStyle = UITableViewCellSelectionStyleNone;
-        [_tableView registerClass:MLBaseTableViewCell.class forCellReuseIdentifier:@"BaseTableViewCell"];
-        [self setupTableView:_tableView];
-        [self.view addSubview:_tableView];
+        _tableView.showsVerticalScrollIndicator = false;
+        _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+        [_tableView registerClass:MLBaseTableViewCell.class forCellReuseIdentifier:@"MLBaseTableViewCell"];
         
+        weakify(self)
         _tableView.mj_header = [MJRefreshNormalHeader headerWithRefreshingBlock:^{
+            strongify(self)
             self.page = 1;
             [self loadData];
+            if (self.hasFooter) {
+                self.tableView.mj_footer.state = MJRefreshStateIdle;
+            }
         }];
+        
+        [self setupTableView:_tableView];
+        [self.view addSubview:self.noData];
+        [self.view addSubview:_tableView];
     }
     return _tableView;
 }
 
-#pragma mark - data
+- (SCCCustomNavigationBar *)navigationBar {
+    if (!_navigationBar) {
+        _navigationBar = [SCCCustomNavigationBar new];
+        _navigationBar.titleLab.text = @"";
+        [self.view addSubview:_navigationBar];
+        weakify(self)
+        _navigationBar.handleBackBlock = ^(UIButton * _Nonnull button) {
+            strongify(self)
+            [self pop];
+        };
+        
+        [_navigationBar mas_makeConstraints:^(MASConstraintMaker *make) {
+            make.leading.top.trailing.mas_equalTo(self.view);
+            make.height.mas_equalTo(SCC_TopBar_Height);
+        }];
+    }
+    return _navigationBar;
+}
 
+#pragma mark - data
 - (NSMutableArray *)dataArray {
     if (!_dataArray) {
         _dataArray = [NSMutableArray array];
-    }else if (_dataArray.count) {
+    } else if (_dataArray.count) {
         if ([_dataArray.firstObject isKindOfClass:MLBaseTableViewSectionModel.class]) {
             _isSectionModel = YES;
-//            for (MLBaseTableViewSectionModel *section in _dataArray) {
-//                NSArray *arr = section.cellModels;
-//                if ([arr.lastObject isKindOfClass:MLBaseCellModel.class]) {
-//                    MLBaseCellModel *model = arr.lastObject;
-//                    model.showLine = NO;
-//                }
-//            }
-        }else{
+        } else {
             _isSectionModel = NO;
-//            if ([_dataArray.lastObject isKindOfClass:MLBaseCellModel.class]) {
-//                MLBaseCellModel *model = _dataArray.lastObject;
-//                model.showLine = NO;
-//            }
         }
     }
+    
     return _dataArray;
 }
 
+- (void)setDataArray:(NSMutableArray *)dataArray
+{
+    _dataArray = dataArray;
+    _noData.hidden = _dataArray.count;
+}
+
+- (id)resultDeconstructor:(id)response {
+    NSDictionary *dict = response[@"result"] ?: @{};
+    NSInteger code = [response[@"code"] ?: 0 integerValue];
+    BOOL success = [response[@"success"] ?: false boolValue];
+    NSString *message = response[@"message"] ?: @"";
+    
+    if (code != 200 || !success || dict.count == 0) {
+        NSError *err = [NSError errorWithDomain:message code:code userInfo:dict];
+        return err;
+    }else{
+        return dict;
+    }
+}
+
+- (NSMutableArray *)modelArrayFrom:(NSDictionary *)data modelName:(NSString *)modelName {
+    if (![data isKindOfClass:NSDictionary.class] || ![data.allKeys containsObject:@"records"]) {
+        return NSMutableArray.array;
+    }
+    _totalPage = [(data[@"totalPage"] ?: @"1") integerValue];
+    NSArray *array = data[@"records"] ?: @[];
+    return [array toModelArr:modelName];
+}
+
+- (void)recordsParsing:(NSDictionary *)data modelName:(NSString *)modelName {
+    _totalPage = [(data[@"totalPage"] ?: @"1") integerValue];
+    NSArray *array = data[@"records"] ?: @[];
+    
+    NSMutableArray *arrM = [array toModelArr:modelName];
+    if (self.page == 1) {
+        self.dataArray = arrM;
+    }else{
+        [self.dataArray addObjectsFromArray:arrM];
+    }
+}
+
+- (void)recordsParsing:(NSDictionary *)data modelName:(NSString *)modelName section:(void (^)(MLBaseTableViewSectionModel * _Nonnull))setupSection {
+    _totalPage = [data[@"totalPage"] ?: @"1" integerValue];
+    NSMutableArray *datas = [data[@"records"] toModelArr:modelName];
+    
+    NSMutableArray *arrM = NSMutableArray.array;
+    for (MLBaseCellModel *model in datas) {
+        MLBaseTableViewSectionModel *section = MLBaseTableViewSectionModel.new;
+        section.cellModels = @[model].mutableCopy;
+        if (setupSection) {
+            setupSection(section);
+        }
+        [arrM addObject:section];
+    }
+    
+    if (self.page == 1) {
+        self.dataArray = arrM;
+    }else{
+        [self.dataArray addObjectsFromArray:arrM];
+    }
+}
 @end

@@ -6,7 +6,6 @@
 
 - (instancetype)init {
     if (self = [super init]) {
-        self.showLine = YES;
     }
     return self;
 }

@@ -1,7 +1,6 @@
 
 #import "MLBaseModel.h"
-#import "MJExtension.h"
-#import "MLExtension.h"
+#import <MJExtension/MJExtension.h>
 
 @implementation MLBaseModel
 - (id)copyWithZone:(nullable NSZone *)zone {
@@ -9,7 +8,7 @@
     return [dict toModel:NSStringFromClass(self.class)];
 }
 
-- (NSMutableDictionary *)keyValue {
-    return [self mj_keyValues];
+- (NSDictionary *)keyValue {
+    return (NSDictionary *)[self modelToJSONObject];
 }
 @end

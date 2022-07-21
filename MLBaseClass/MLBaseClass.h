@@ -15,4 +15,5 @@
 #import "MLBaseCellModel.h"
 #import "MLBaseTableViewCell.h"
 #import "MLBaseNavigationController.h"
+#import "MLTableView.h"
 #endif /* MLBaseClass_h */
